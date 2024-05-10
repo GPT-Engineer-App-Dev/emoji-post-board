@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Container, VStack, Text, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Input, useDisclosure, Box, IconButton } from '@chakra-ui/react';
 import { FaRegSmile } from 'react-icons/fa';
+const API_BASE_URL = 'https://nvfxbesbgohafwkbhsvv.supabase.co/rest/v1';
+const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52ZnhiZXNiZ29oYWZ3a2Joc3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTUxNTcwMjcsImV4cCI6MjAzMDczMzAyN30.2VLc7SxL3hYJ_lpO4YnMrvGKViKUIBKdooZLyZ4NL5Q';
 
 const Index = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -15,10 +17,14 @@ const Index = () => {
   }, []);
 
   const fetchPosts = async () => {
-    // Placeholder for fetching posts from the database
-    setPosts([
-      { id: 1, title: 'First Post', body: 'This is the first post', created_at: new Date().toISOString(), author_id: userId, reactions: [] }
-    ]);
+    const response = await fetch(`${API_BASE_URL}/posts`, {
+      headers: {
+        'apikey': API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await response.json();
+    setPosts(data);
   };
 
   const handleLoginLogout = () => {
@@ -26,32 +32,43 @@ const Index = () => {
   };
 
   const handlePostCreation = async () => {
-    // Placeholder for creating a post in the database
-    const newPost = { id: posts.length + 1, title: newPostTitle, body: newPostBody, created_at: new Date().toISOString(), author_id: userId, reactions: [] };
-    setPosts([...posts, newPost]);
-    setNewPostTitle('');
-    setNewPostBody('');
-  };
-
-  const handleReaction = (postId, emoji) => {
-    // Placeholder for handling reactions
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        const existingReaction = post.reactions.find(reaction => reaction.emoji === emoji && reaction.user_id === userId);
-        if (existingReaction) {
-          post.reactions = post.reactions.filter(reaction => !(reaction.emoji === emoji && reaction.user_id === userId));
-        } else {
-          post.reactions.push({ id: post.reactions.length + 1, post_id: postId, user_id: userId, emoji });
-        }
-      }
-      return post;
+    const response = await fetch(`${API_BASE_URL}/posts`, {
+      method: 'POST',
+      headers: {
+        'apikey': API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title: newPostTitle, body: newPostBody, author_id: userId })
     });
-    setPosts(updatedPosts);
+    if (response.ok) {
+      fetchPosts();
+    }
   };
 
-  const handleDeletePost = (postId) => {
-    // Placeholder for deleting a post
-    setPosts(posts.filter(post => post.id !== postId));
+  const handleReaction = async (postId, emoji) => {
+    const response = await fetch(`${API_BASE_URL}/reactions`, {
+      method: 'POST',
+      headers: {
+        'apikey': API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ post_id: postId, emoji, user_id: userId })
+    });
+    if (response.ok) {
+      fetchPosts();
+    }
+  };
+
+  const handleDeletePost = async (postId) => {
+    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': API_KEY
+      }
+    });
+    if (response.ok) {
+      fetchPosts();
+    }
   };
 
   return (
